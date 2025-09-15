@@ -1,0 +1,6 @@
+@SteamClone.Backend_HostAddress = http://localhost:5062
+
+GET {{SteamClone.Backend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

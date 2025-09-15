@@ -1,0 +1,56 @@
+using SteamClone.Backend.Entities;
+namespace SteamClone.Backend.Services;
+
+using BCrypt.Net;
+
+
+public interface IUserService
+{
+    User? GetByEmail(string email);
+    User? Create(User user, string password);
+    bool VerifyPassword(User user, string password);
+    IEnumerable<User> GetAll();
+    bool Delete(int id);
+}
+public class UserService : IUserService
+{
+    private readonly List<User> _users = new();
+
+    public UserService()
+    {
+        _users.AddRange(new[]
+        {
+            new User { Id = 1, Username = "john_doe", Email = "john@example.com", PasswordHash = "hashed_password", Role = UserRole.Player, CreatedAt = DateTime.UtcNow },
+            new User { Id = 2, Username = "jane_doe", Email = "jane@example.com", PasswordHash = "hashed_password", Role = UserRole.Player, CreatedAt = DateTime.UtcNow },
+            new User { Id = 3, Username = "alice_smith", Email = "alice@example.com", PasswordHash = "hashed_password", Role = UserRole.Player, CreatedAt = DateTime.UtcNow },
+            new User { Id = 4, Username = "bob_jones", Email = "bob@example.com", PasswordHash = "hashed_password", Role = UserRole.Publisher, CreatedAt = DateTime.UtcNow },
+            new User { Id = 5, Username = "charlie_brown", Email = "charlie@example.com", PasswordHash = "hashed_password", Role = UserRole.Admin, CreatedAt = DateTime.UtcNow }
+        });
+    }
+
+    public User? GetByEmail(string email) => _users.FirstOrDefault(u => u.Email == email);
+
+    public User Create(User user, string rawPassword)
+    {
+        user.Id = _users.Count + 1;
+        user.CreatedAt = DateTime.UtcNow;
+        user.PasswordHash = BCrypt.HashPassword(rawPassword);
+        _users.Add(user);
+        return user;
+    }
+
+    public bool VerifyPassword(User user, string password)
+    {
+        return BCrypt.Verify(password, user.PasswordHash);
+    }
+
+    public IEnumerable<User> GetAll() => _users;
+    public bool Delete(int id)
+    {
+        var user = _users.FirstOrDefault(u => u.Id == id);
+        if (user == null) return false;
+
+        _users.Remove(user);
+        return true;
+    }
+}
