@@ -24,7 +24,7 @@ public class UsersController : ControllerBase
     [Authorize(Roles = "Admin")]
     public ActionResult<IEnumerable<UserDto>> GetUsers([FromQuery] UserRole? role, [FromQuery] string? username)
     {
-        var result = _userService.GetAll();
+        var result = _userService.GetAllUsers();
         if (role.HasValue)
         {
             result = result.Where(u => u.Role == role.Value);
@@ -49,7 +49,7 @@ public class UsersController : ControllerBase
             return Forbid();
         }
 
-        var user = _userService.GetAll().FirstOrDefault(u => u.Id == id);
+        var user = _userService.GetAllUsers().FirstOrDefault(u => u.Id == id);
         if (user == null) return NotFound();
 
         return Ok(user.MapToDto());
@@ -66,7 +66,7 @@ public class UsersController : ControllerBase
         {
             return Forbid();
         }
-        var user = _userService.GetAll().FirstOrDefault(u => u.Id == id);
+        var user = _userService.GetAllUsers().FirstOrDefault(u => u.Id == id);
         if (user == null)
         {
             return NotFound();
