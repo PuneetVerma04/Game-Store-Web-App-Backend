@@ -7,4 +7,5 @@ public class CreateGameRequestDTO
     public decimal Price { get; set; }
     public string Genre { get; set; } = string.Empty;
     public string Publisher { get; set; } = string.Empty;
+    public string ImageUrl { get; set; } = string.Empty;
 }
