@@ -1,64 +1,99 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SteamClone.Backend.DTOs;
 using SteamClone.Backend.Entities;
+using SteamClone.Backend.Extensions;
+using SteamClone.Backend.Services;
 
 namespace SteamClone.Backend.Controllers;
 
 [ApiController]
 [Route("store/[controller]")]
-[Authorize (Roles = "Player,Admin")]
+[Authorize(Roles = "Player,Admin")]
 public class ReviewController : ControllerBase
 {
-    private static readonly List<Reviews> reviews = new();
+    private readonly IReviewService _reviewService;
+    private readonly IUserService _userService;
 
-    private static int nextReviewId = 1;
+    public ReviewController(IReviewService reviewService, IUserService userService)
+    {
+        _reviewService = reviewService;
+        _userService = userService;
+    }
+
+    private int GetCurrentUserId()
+    {
+        return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new Exception("User ID Claim missing"));
+    }
+
+    private string GetCurrentUserRole()
+    {
+        return User.FindFirst(ClaimTypes.Role)?.Value ?? throw new Exception("User Role Claim missing");
+    }
 
     [HttpGet("game/{gameId}")]
-    [Authorize (Roles = "Player,Admin,Publisher")]
-    public ActionResult<IEnumerable<Reviews>> GetReviewForGame(int gameId)
+    public ActionResult<IEnumerable<ReviewDto>> GetReviewForGame(int gameId)
     {
-        var gameReviews = reviews.Where(r => r.GameId == gameId).ToList();
-        return Ok(gameReviews);
+        var gameReviews = _reviewService.GetReviewForGame(gameId);
+        return Ok(gameReviews.Select(r => r.MapToDto()));
     }
 
     [HttpGet("{reviewId}")]
-    public ActionResult<Reviews> GetReviewById(int reviewId)
+    public ActionResult<ReviewDto> GetReviewById(int reviewId)
     {
-        var review = reviews.FirstOrDefault(r => r.ReviewId == reviewId);
+        var review = _reviewService.GetReviewById(reviewId);
         if (review == null)
         {
             return NotFound();
         }
-        return Ok(review);
+        return Ok(review.MapToDto());
     }
 
     [HttpPost("game/{gameId}/add")]
     [Authorize (Roles = "Player")]
-    public ActionResult<Reviews> CreateReview(int gameId, [FromBody] Reviews newReview)
+    public ActionResult<ReviewDto> CreateReview(int gameId, [FromBody] Reviews newReview)
     {
-        newReview.GameId = gameId;
-        newReview.ReviewId = nextReviewId++;
-        reviews.Add(newReview);
-        return CreatedAtAction(nameof(GetReviewForGame), new { gameId = gameId }, newReview);
+        var currentUserId = GetCurrentUserId();
+
+        var createdReview = _reviewService.AddReview(gameId, currentUserId, newReview);
+
+        var user = _userService.GetById(currentUserId);
+        var reviewDto = createdReview.MapToDto();
+
+        return CreatedAtAction(nameof(GetReviewById), new { reviewId = reviewDto.ReviewId }, reviewDto);
     }
 
     [HttpDelete("{reviewId}")]
     [Authorize]
     public ActionResult DeleteReview(int reviewId)
     {
-        var review = reviews.FirstOrDefault(r => r.ReviewId == reviewId);
+        var review = _reviewService.GetReviewById(reviewId);
         if (review == null)
         {
             return NotFound();
         }
-        var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-        var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
+        var currentUserId = GetCurrentUserId();
+        var currentUserRole = GetCurrentUserRole();
 
-        if (currentUserRole != "Admin" && review.UserId != currentUserId)
+        var success = _reviewService.DeleteReview(reviewId, currentUserId, currentUserRole);
+        if (!success)
+        {
             return Forbid();
-        
-        reviews.Remove(review);
+        }
         return NoContent();
+    }
+
+    [HttpPatch("{reviewId}/update")]
+    [Authorize(Roles = "Player")]
+    public ActionResult<ReviewDto> UpdateReview(int reviewId, [FromBody] Reviews updatedReview)
+    {
+        var currentUserId = GetCurrentUserId();
+        var updatedReviewDto = _reviewService.UpdateReview(reviewId, currentUserId, updatedReview.Comment, updatedReview.Rating);
+        if (updatedReviewDto == null)
+        {
+            return NotFound();
+        }
+        return Ok(updatedReviewDto);
     }
 }
