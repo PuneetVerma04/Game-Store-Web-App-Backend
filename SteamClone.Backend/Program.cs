@@ -10,6 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.AddSingleton<IUserService, UserService>();
+builder.Services.AddSingleton<IGameService, GameService>();
+builder.Services.AddSingleton<ICartService, CartService>();
+builder.Services.AddSingleton<IOrderService, OrderService>();
+builder.Services.AddSingleton<IReviewService, ReviewService>();
 builder.Services.AddSingleton<JwtService>();
 
 
