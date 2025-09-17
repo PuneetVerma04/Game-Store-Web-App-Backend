@@ -2,6 +2,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SteamClone.Backend.Entities;
+using SteamClone.Backend.Services;
+using SteamClone.Backend.Extensions;
 
 namespace SteamClone.Backend.Controllers;
 
@@ -11,77 +13,83 @@ namespace SteamClone.Backend.Controllers;
 [Authorize(Roles = "Player,Admin")]
 public class OrderController : ControllerBase
 {
-    public static readonly List<Order> orders = new();
-    private static int nextOrderId = 1;
+    private readonly IOrderService orderService;
+    private readonly ICartService cartService;
 
-    [HttpGet("{userId}")]
-    public IActionResult GetOrdersforUser(int userId)
-    {   
-        var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-        var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-        if (currentUserRole != "Admin" && currentUserId != userId)
-        {
-            return Forbid();
-        }
-        var userOrders = orders.Where(o => o.UserId == userId).ToList();
-        return Ok(userOrders);
+    public OrderController(IOrderService orderService, ICartService cartService)
+    {
+        this.orderService = orderService;
+        this.cartService = cartService;
+    }
+    
+    private int GetCurrentUserId()
+    {
+        return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new Exception("User ID Claim missing"));
     }
 
-    [HttpPost("{userId}/checkout")]
-    public IActionResult Checkout(int userId)
+    private string GetCurrentUserRole()
+    {
+        return User.FindFirst(ClaimTypes.Role)?.Value ?? throw new Exception("User Role Claim missing");
+    }
+
+    [HttpGet]
+    public IActionResult GetOrdersforCurrentUser()
     {   
-        if (!CartController.cart.ContainsKey(userId) || CartController.cart[userId].Count == 0)
+        var currentUserId = GetCurrentUserId();
+        var currentUserRole = GetCurrentUserRole();
+
+        var orders = currentUserRole == "Admin"
+                    ? orderService.GetAllOrders()
+                    : orderService.GetOrdersForUser(currentUserId);
+
+        return Ok(orders.Select(o => o.MapToDto()));
+    }
+
+    [HttpPost("checkout")]
+    public IActionResult Checkout()
+    {   
+        var currentUserId = GetCurrentUserId();
+        var cartItems = cartService.GetCartItems(currentUserId).ToList();
+
+        if (!cartItems.Any())
         {
             return BadRequest("Cart is empty");
         }
 
-        var cartItems = CartController.cart[userId];
-        var totalPrice = cartItems.Sum(item => item.Price);
-
-        var order = new Order
-        {
-            OrderId = nextOrderId++,
-            UserId = userId,
-            Items = new List<CartItem>(cartItems),
-            TotalPrice = totalPrice,
-            OrderDate = DateTime.UtcNow,
-            Status = OrderStatus.Completed
-        };
-
-        orders.Add(order);
-        CartController.cart.Remove(userId);
-
-        return Ok(order);
+        var order = orderService.CreateOrder(currentUserId, cartItems);
+        cartService.ClearCart(currentUserId);
+        return Ok(order.MapToDto());
     }
 
-    [HttpGet("details/{orderId}")]
+    [HttpGet("{orderId}")]
     [Authorize (Roles = "Player,Admin")]
     public IActionResult GetOrderDetails(int orderId)
     {
-        var order = orders.FirstOrDefault(o => o.OrderId == orderId);
+        var order = orderService.GetOrderById(orderId);
         if (order == null)
         {
             return NotFound("Order not found");
         }
-        return Ok(order);
+        var currentUserId = GetCurrentUserId();
+        var currentUserRole = GetCurrentUserRole();
+        if (currentUserRole != "Admin" && order.UserId != currentUserId)
+        {
+            return Forbid();
+        }
+        return Ok(order.MapToDto());
     }
 
     [HttpPatch("{orderId}/status")]
     [Authorize (Roles = "Admin")]
     public IActionResult UpdateOrderStatus(int orderId, [FromBody] OrderStatus newStatus)
     {
-        var order = orders.FirstOrDefault(o => o.OrderId == orderId);
+        var order = orderService.GetOrderById(orderId);
         if (order == null)
         {
             return NotFound("Order not found");
         }
-        if (!Enum.IsDefined(typeof(OrderStatus), newStatus))
-        {
-            return BadRequest("Invalid order status");
-        }
 
         order.Status = newStatus;
-        return Ok(order);
+        return Ok(order.MapToDto());
     }
 }
