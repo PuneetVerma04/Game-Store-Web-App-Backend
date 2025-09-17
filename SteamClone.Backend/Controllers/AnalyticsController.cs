@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SteamClone.Backend.Entities;
+using SteamClone.Backend.Services;
 namespace SteamClone.Backend.Controllers;
 
 
@@ -9,23 +10,24 @@ namespace SteamClone.Backend.Controllers;
 [Authorize(Roles = "Admin")]
 public class AnalyticsController : ControllerBase
 {
-    private readonly List<User> user;
-    private readonly List<Game> games;
-    private readonly List<Order> orders;
+    private readonly IGameService _gameService; // added game service
+    private readonly IUserService _userService; // added user service
+    private readonly IOrderService _orderService; // added order service
+    
 
-    public AnalyticsController()
+    public AnalyticsController(IUserService userService, IGameService gameService, IOrderService orderService)
     {
-        user = UsersController.userList;
-        games = GamesController.games;
-        orders = OrderController.orders;
+        _gameService = gameService; // initialize game service
+        _userService = userService; // initialize user service
+        _orderService = orderService; // initialize order service
     }
 
     [HttpGet]
     public IActionResult GetSummary()
     {
-        var totalUsers = user.Count;
-        var totalGames = games.Count;
-        var totalOrders = orders.Count;
+        var totalUsers = _userService.GetAllUsers().Count();
+        var totalGames = _gameService.GetAllGames().Count();
+        var totalOrders = _orderService.GetAllOrders().Count();
 
         return Ok(new
         {
@@ -38,6 +40,9 @@ public class AnalyticsController : ControllerBase
     [HttpGet("topGames")]
     public IActionResult GetTopPurchasedGames()
     {
+        var orders = _orderService.GetAllOrders();
+        var games = _gameService.GetAllGames().ToList();
+
         var topGames = orders
             .SelectMany(o => o.Items)
             .GroupBy(i => i.GameId)
@@ -58,7 +63,7 @@ public class AnalyticsController : ControllerBase
     public IActionResult GetRevenueLast30Days()
     {
         var cutoffDate = DateTime.UtcNow.AddDays(-30);
-        var revenue = orders
+        var revenue = _orderService.GetAllOrders()
             .Where(o => o.OrderDate >= cutoffDate)
             .Sum(o => o.TotalPrice);
 
