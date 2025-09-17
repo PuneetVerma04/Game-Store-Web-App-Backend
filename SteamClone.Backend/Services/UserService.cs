@@ -5,6 +5,7 @@ using BCrypt.Net;
 public interface IUserService
 {
     User? GetByEmail(string email);
+    User? GetById(int id);
     User? Create(User user, string password);
     bool VerifyPassword(User user, string password);
     IEnumerable<User> GetAllUsers();
@@ -27,6 +28,8 @@ public class UserService : IUserService
     }
 
     public User? GetByEmail(string email) => _users.FirstOrDefault(u => u.Email == email);
+
+    public User? GetById(int id) => _users.FirstOrDefault(u => u.Id == id);
 
     public User Create(User user, string rawPassword)
     {
