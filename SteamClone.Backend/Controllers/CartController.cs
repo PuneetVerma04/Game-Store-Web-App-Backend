@@ -50,6 +50,8 @@ public class CartController : ControllerBase
         {
             return NotFound("Game not found.");
         }
+
+        _cartService.AddToCart(userId, request.GameId, request.Quantity);
         var items = _cartService.GetCartItems(userId)
                                         .Select(ci => new CartItemDto
                                         {
