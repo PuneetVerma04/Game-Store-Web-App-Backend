@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SteamClone.Backend.Entities;
+using SteamClone.Backend.DTOs;
+using SteamClone.Backend.Services;
+using System.Security.Claims;
 
 namespace SteamClone.Backend.Controllers;
 
@@ -9,46 +11,73 @@ namespace SteamClone.Backend.Controllers;
 [Authorize (Roles = "Player")]
 public class CartController : ControllerBase
 {
-    public static readonly Dictionary<int, List<CartItem>> cart = new();
-
-    [HttpGet("{userId}")]
-    public IActionResult GetCart(int userId)
+    private readonly IGameService _gameService;
+    private readonly ICartService _cartService;
+    public CartController(IGameService gameService, ICartService cartService)
     {
-        if (!cart.ContainsKey(userId))
-        {
-            return Ok(new List<CartItem>());
-        }
-        return Ok(cart[userId]);
+        _gameService = gameService;
+        _cartService = cartService;
+    }
+    private int GetUserIdFromClaims()
+    {
+        return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                         ?? throw new Exception("User ID claim missing"));
     }
 
-    [HttpPost("{userId}/add")]
-    public IActionResult AddToCart(int userId, [FromBody] CartItem item)
+    [HttpGet]
+    public IActionResult GetCart()
     {
-        if (!cart.ContainsKey(userId))
-        {
-            cart[userId] = new List<CartItem>();
-        }
-        cart[userId].Add(item);
-
-        return Ok(cart[userId]);
+        var userId = GetUserIdFromClaims();
+        var items = _cartService.GetCartItems(userId)
+                                 .Select(ci => new CartItemDto
+                                 {
+                                     GameId = ci.GameId,
+                                     GameTitle = ci.Game.Title,
+                                     Quantity = ci.Quantity,
+                                     Price = ci.Price,
+                                     ImageUrl = ci.ImageUrl
+                                 });
+      
+        return Ok(items);
     }
 
-    [HttpDelete("{userId}/remove")]
-    public IActionResult RemoveFromCart(int userId, int gameId)
+    [HttpPost("add")]
+    public IActionResult AddToCart([FromBody] CartRequest request)
     {
-    
-        if(!cart.ContainsKey(userId))
+        var userId = GetUserIdFromClaims();
+        var game = _gameService.GetById(request.GameId);
+        if(game == null)
         {
-            return NotFound("Cart not found");
+            return NotFound("Game not found.");
         }
+        var items = _cartService.GetCartItems(userId)
+                                        .Select(ci => new CartItemDto
+                                        {
+                                            GameId = ci.GameId,
+                                            GameTitle = ci.Game.Title,
+                                            Quantity = ci.Quantity,
+                                            Price = ci.Price,
+                                            ImageUrl = ci.ImageUrl
+                                        });
+        return Ok(items);
+    }
 
-        var userCart = cart[userId];
-        var item = userCart.FirstOrDefault(ci => ci.GameId == gameId);
-        if (item == null)
-        {
-            return NotFound("Game not found in cart");
-        }
-        userCart.Remove(item);
-        return NoContent();
+
+    [HttpPatch("update")]
+    public IActionResult UpdateCartItem([FromBody] CartRequest request)
+    {
+        var userId = GetUserIdFromClaims();
+        _cartService.UpdateCartItem(userId, request.GameId, request.Quantity);
+
+        var items = _cartService.GetCartItems(userId)
+                                        .Select(ci => new CartItemDto
+                                        {
+                                            GameId = ci.GameId,
+                                            GameTitle = ci.Game.Title,
+                                            Quantity = ci.Quantity,
+                                            Price = ci.Price,
+                                            ImageUrl = ci.ImageUrl
+                                        });
+        return Ok(items);
     }
 }
