@@ -1,12 +1,12 @@
-namespace SteamClone.Backend.Entities
+namespace SteamClone.Backend.Entities;
+
+public class Coupons
 {
-    public class Coupons
-    {
-        public int CouponId { get; set; }
-        public required string Code { get; set; }
-        public required decimal DiscountAmount { get; set; }
-        public required DateTime ExpirationDate { get; set; }
-        public required bool IsActive { get; set; } = true;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    }
+    public int CouponId { get; set; }
+    public required string Code { get; set; }
+    public required string Name { get; set; }
+    public required int DiscountPercent { get; set; }
+    public required bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public required DateTime ExpirationDate { get; set; }
 }
