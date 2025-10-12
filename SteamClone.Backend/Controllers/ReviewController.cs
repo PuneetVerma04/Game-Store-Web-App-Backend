@@ -2,9 +2,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SteamClone.Backend.DTOs;
-using SteamClone.Backend.Entities;
-using SteamClone.Backend.Extensions;
 using SteamClone.Backend.Services;
+using AutoMapper;
 
 namespace SteamClone.Backend.Controllers;
 
@@ -15,11 +14,13 @@ public class ReviewController : ControllerBase
 {
     private readonly IReviewService _reviewService;
     private readonly IUserService _userService;
+    private readonly IMapper _mapper;
 
-    public ReviewController(IReviewService reviewService, IUserService userService)
+    public ReviewController(IReviewService reviewService, IUserService userService, IMapper mapper)
     {
         _reviewService = reviewService;
         _userService = userService;
+        _mapper = mapper;
     }
 
     private int GetCurrentUserId()
@@ -36,7 +37,7 @@ public class ReviewController : ControllerBase
     public ActionResult<IEnumerable<ReviewDto>> GetReviewForGame(int gameId)
     {
         var gameReviews = _reviewService.GetReviewForGame(gameId);
-        return Ok(gameReviews.Select(r => r.MapToDto()));
+        return Ok(gameReviews);
     }
 
     [HttpGet("{reviewId}")]
@@ -47,21 +48,18 @@ public class ReviewController : ControllerBase
         {
             return NotFound();
         }
-        return Ok(review.MapToDto());
+        return Ok(review);
     }
 
     [HttpPost("game/{gameId}/add")]
-    [Authorize (Roles = "Player")]
-    public ActionResult<ReviewDto> CreateReview(int gameId, [FromBody] Reviews newReview)
+    [Authorize(Roles = "Player")]
+    public ActionResult<ReviewDto> CreateReview(int gameId, [FromBody] ReviewCreateDto newReviewDto)
     {
         var currentUserId = GetCurrentUserId();
 
-        var createdReview = _reviewService.AddReview(gameId, currentUserId, newReview);
+        var createdReview = _reviewService.AddReview(gameId, currentUserId, newReviewDto);
 
-        var user = _userService.GetById(currentUserId);
-        var reviewDto = createdReview.MapToDto();
-
-        return CreatedAtAction(nameof(GetReviewById), new { reviewId = reviewDto.ReviewId }, reviewDto);
+        return CreatedAtAction(nameof(GetReviewById), new { reviewId = createdReview.ReviewId }, createdReview);
     }
 
     [HttpDelete("{reviewId}")]
@@ -86,14 +84,14 @@ public class ReviewController : ControllerBase
 
     [HttpPatch("{reviewId}/update")]
     [Authorize(Roles = "Player")]
-    public ActionResult<ReviewDto> UpdateReview(int reviewId, [FromBody] Reviews updatedReview)
+    public ActionResult<ReviewDto> UpdateReview(int reviewId, [FromBody] ReviewCreateDto updatedReviewDto)
     {
         var currentUserId = GetCurrentUserId();
-        var updatedReviewDto = _reviewService.UpdateReview(reviewId, currentUserId, updatedReview.Comment, updatedReview.Rating);
-        if (updatedReviewDto == null)
+        var updatedReview = _reviewService.UpdateReview(reviewId, currentUserId, updatedReviewDto.Comment, updatedReviewDto.Rating);
+        if (updatedReview == null)
         {
             return NotFound();
         }
-        return Ok(updatedReviewDto);
+        return Ok(updatedReview);
     }
 }

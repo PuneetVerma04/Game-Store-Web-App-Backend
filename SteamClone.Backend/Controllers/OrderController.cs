@@ -1,27 +1,29 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SteamClone.Backend.DTOs;
 using SteamClone.Backend.Entities;
 using SteamClone.Backend.Services;
-using SteamClone.Backend.Extensions;
+using AutoMapper;
 
 namespace SteamClone.Backend.Controllers;
-
 
 [ApiController]
 [Route("store/[controller]")]
 [Authorize(Roles = "Player,Admin")]
 public class OrderController : ControllerBase
 {
-    private readonly IOrderService orderService;
-    private readonly ICartService cartService;
+    private readonly IOrderService _orderService;
+    private readonly ICartService _cartService;
+    private readonly IMapper _mapper;
 
-    public OrderController(IOrderService orderService, ICartService cartService)
+    public OrderController(IOrderService orderService, ICartService cartService, IMapper mapper)
     {
-        this.orderService = orderService;
-        this.cartService = cartService;
+        _orderService = orderService;
+        _cartService = cartService;
+        _mapper = mapper;
     }
-    
+
     private int GetCurrentUserId()
     {
         return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new Exception("User ID Claim missing"));
@@ -34,38 +36,38 @@ public class OrderController : ControllerBase
 
     [HttpGet]
     public IActionResult GetOrdersforCurrentUser()
-    {   
+    {
         var currentUserId = GetCurrentUserId();
         var currentUserRole = GetCurrentUserRole();
 
         var orders = currentUserRole == "Admin"
-                    ? orderService.GetAllOrders()
-                    : orderService.GetOrdersForUser(currentUserId);
+                    ? _orderService.GetAllOrders()
+                    : _orderService.GetOrdersForUser(currentUserId);
 
-        return Ok(orders.Select(o => o.MapToDto()));
+        return Ok(orders);
     }
 
     [HttpPost("checkout")]
     public IActionResult Checkout()
-    {   
+    {
         var currentUserId = GetCurrentUserId();
-        var cartItems = cartService.GetCartItems(currentUserId).ToList();
+        var cartItems = _cartService.GetCartItems(currentUserId).ToList();
 
         if (!cartItems.Any())
         {
             return BadRequest("Cart is empty");
         }
 
-        var order = orderService.CreateOrder(currentUserId, cartItems);
-        cartService.ClearCart(currentUserId);
-        return Ok(order.MapToDto());
+        var order = _orderService.CreateOrder(currentUserId, _mapper.Map<List<CartItem>>(cartItems));
+        _cartService.ClearCart(currentUserId);
+        return Ok(order);
     }
 
     [HttpGet("{orderId}")]
-    [Authorize (Roles = "Player,Admin")]
+    [Authorize(Roles = "Player,Admin")]
     public IActionResult GetOrderDetails(int orderId)
     {
-        var order = orderService.GetOrderById(orderId);
+        var order = _orderService.GetOrderById(orderId);
         if (order == null)
         {
             return NotFound("Order not found");
@@ -76,20 +78,18 @@ public class OrderController : ControllerBase
         {
             return Forbid();
         }
-        return Ok(order.MapToDto());
+        return Ok(order);
     }
 
     [HttpPatch("{orderId}/status")]
-    [Authorize (Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public IActionResult UpdateOrderStatus(int orderId, [FromBody] OrderStatus newStatus)
     {
-        var order = orderService.GetOrderById(orderId);
-        if (order == null)
+        var success = _orderService.UpdateOrderStatus(orderId, newStatus);
+        if (!success)
         {
             return NotFound("Order not found");
         }
-
-        order.Status = newStatus;
-        return Ok(order.MapToDto());
+        return Ok();
     }
 }

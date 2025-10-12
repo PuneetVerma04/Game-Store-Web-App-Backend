@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SteamClone.Backend.DTOs;
-using SteamClone.Backend.Entities;
-using SteamClone.Backend.Extensions;
 using SteamClone.Backend.Services;
+using AutoMapper;
 
 namespace SteamClone.Backend.Controllers;
 
@@ -12,32 +11,32 @@ namespace SteamClone.Backend.Controllers;
 public class GamesController : ControllerBase
 {
     private readonly IGameService _gameService;
+    private readonly IMapper _mapper;
 
-    public GamesController(IGameService gameService)
+    public GamesController(IGameService gameService, IMapper mapper)
     {
         _gameService = gameService;
+        _mapper = mapper;
     }
+
     [HttpGet]
     [AllowAnonymous]
     public ActionResult<IEnumerable<GameResponseDTO>> GetGames(string? genre = null, decimal? maxPrice = null)
     {
-        var games = _gameService.GetAllGames().ToList();
-        var result = games.AsEnumerable();
+        var games = _gameService.GetAllGames();
 
         if (!string.IsNullOrEmpty(genre))
         {
-            result = result.Where(g => g.Genre.Equals(genre, StringComparison.OrdinalIgnoreCase));
+            games = games.Where(g => g.Genre.Equals(genre, StringComparison.OrdinalIgnoreCase));
         }
 
         if (maxPrice.HasValue)
         {
-            result = result.Where(g => g.Price <= maxPrice.Value);
+            games = games.Where(g => g.Price <= maxPrice.Value);
         }
 
-        return Ok(result.Select(g => g.MapToResponse()));
+        return Ok(games);
     }
-
-
 
     [HttpGet("{id}")]
     [AllowAnonymous]
@@ -48,55 +47,27 @@ public class GamesController : ControllerBase
         {
             return NotFound();
         }
-        return Ok(game.MapToResponse());
+        return Ok(game);
     }
-
-
 
     [HttpPost]
     [Authorize(Roles = "Publisher,Admin")]
     public ActionResult<GameResponseDTO> CreateGame([FromBody] CreateGameRequestDTO newGame)
     {
-
-        var game = new Game
-        {   
-            Title = newGame.Title,
-            Description = newGame.Description,
-            Price = newGame.Price,
-            Genre = newGame.Genre,
-            Publisher = newGame.Publisher,
-            ReleaseDate = DateTime.UtcNow,
-            ImageUrl = newGame.ImageUrl
-        };
-        var createdGame = _gameService.CreateGame(game);
-        var response = createdGame.MapToResponse();
-        return CreatedAtAction(nameof(GetGameById), new { id = createdGame.Id }, response);
+        var createdGame = _gameService.CreateGame(newGame);
+        return CreatedAtAction(nameof(GetGameById), new { id = createdGame.Id }, createdGame);
     }
-
 
     [HttpPut("{id}")]
     [Authorize(Roles = "Publisher,Admin")]
     public ActionResult<GameResponseDTO> UpdateGame(int id, [FromBody] UpdateGameRequestDTO updatedGame)
     {
-        var game = _gameService.GetById(id);
-        if (game == null)
+        var updated = _gameService.UpdateGame(id, updatedGame);
+        if (updated == null)
         {
             return NotFound();
         }
-
-        // Update the game properties with the new values
-        if(!string.IsNullOrEmpty(updatedGame.Title))
-            game.Title = updatedGame.Title;
-        if(!string.IsNullOrEmpty(updatedGame.Description))
-            game.Description = updatedGame.Description;
-        if(updatedGame.Price.HasValue)
-            game.Price = updatedGame.Price.Value;
-        if(!string.IsNullOrEmpty(updatedGame.Genre))
-            game.Genre = updatedGame.Genre;
-        var updated = _gameService.UpdateGame(id, game); // corrected variable name from 'existing' to 'game'   
-        if (updated == null)
-            return NotFound();
-        return Ok(game.MapToResponse()); //204 Response
+        return Ok(updated);
     }
 
     [HttpDelete("{id}")]
@@ -106,10 +77,10 @@ public class GamesController : ControllerBase
         var game = _gameService.GetById(id);
         if (game == null)
         {
-            return NotFound(); //404 if NotFound
+            return NotFound();
         }
 
         _gameService.DeleteGame(id);
-        return NoContent(); //204 Response
+        return NoContent();
     }
 }

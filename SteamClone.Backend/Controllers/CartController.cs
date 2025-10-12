@@ -2,22 +2,27 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SteamClone.Backend.DTOs;
 using SteamClone.Backend.Services;
+using AutoMapper;
 using System.Security.Claims;
 
 namespace SteamClone.Backend.Controllers;
 
 [ApiController]
 [Route("store/[controller]")]
-[Authorize (Roles = "Player")]
+[Authorize(Roles = "Player")]
 public class CartController : ControllerBase
 {
     private readonly IGameService _gameService;
     private readonly ICartService _cartService;
-    public CartController(IGameService gameService, ICartService cartService)
+    private readonly IMapper _mapper;
+
+    public CartController(IGameService gameService, ICartService cartService, IMapper mapper)
     {
         _gameService = gameService;
         _cartService = cartService;
+        _mapper = mapper;
     }
+
     private int GetUserIdFromClaims()
     {
         return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -28,16 +33,7 @@ public class CartController : ControllerBase
     public IActionResult GetCart()
     {
         var userId = GetUserIdFromClaims();
-        var items = _cartService.GetCartItems(userId)
-                                 .Select(ci => new CartItemDto
-                                 {
-                                     GameId = ci.GameId,
-                                     GameTitle = ci.Game.Title,
-                                     Quantity = ci.Quantity,
-                                     Price = ci.Price,
-                                     ImageUrl = ci.ImageUrl
-                                 });
-      
+        var items = _cartService.GetCartItems(userId);
         return Ok(items);
     }
 
@@ -46,24 +42,15 @@ public class CartController : ControllerBase
     {
         var userId = GetUserIdFromClaims();
         var game = _gameService.GetById(request.GameId);
-        if(game == null)
+        if (game == null)
         {
             return NotFound("Game not found.");
         }
 
         _cartService.AddToCart(userId, request.GameId, request.Quantity);
-        var items = _cartService.GetCartItems(userId)
-                                        .Select(ci => new CartItemDto
-                                        {
-                                            GameId = ci.GameId,
-                                            GameTitle = ci.Game.Title,
-                                            Quantity = ci.Quantity,
-                                            Price = ci.Price,
-                                            ImageUrl = ci.ImageUrl
-                                        });
+        var items = _cartService.GetCartItems(userId);
         return Ok(items);
     }
-
 
     [HttpPatch("update")]
     public IActionResult UpdateCartItem([FromBody] CartRequest request)
@@ -71,15 +58,7 @@ public class CartController : ControllerBase
         var userId = GetUserIdFromClaims();
         _cartService.UpdateCartItem(userId, request.GameId, request.Quantity);
 
-        var items = _cartService.GetCartItems(userId)
-                                        .Select(ci => new CartItemDto
-                                        {
-                                            GameId = ci.GameId,
-                                            GameTitle = ci.Game.Title,
-                                            Quantity = ci.Quantity,
-                                            Price = ci.Price,
-                                            ImageUrl = ci.ImageUrl
-                                        });
+        var items = _cartService.GetCartItems(userId);
         return Ok(items);
     }
 }

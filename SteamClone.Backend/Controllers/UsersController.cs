@@ -1,11 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SteamClone.Backend.Entities;
 using SteamClone.Backend.DTOs;
-using SteamClone.Backend.Extensions;
-using System.Security.Claims;
 using SteamClone.Backend.Services;
-
+using AutoMapper;
+using System.Security.Claims;
 
 namespace SteamClone.Backend.Controllers;
 
@@ -14,27 +12,25 @@ namespace SteamClone.Backend.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IMapper _mapper;
 
-    public UsersController(IUserService userService)
+    public UsersController(IUserService userService, IMapper mapper)
     {
         _userService = userService;
+        _mapper = mapper;
     }
 
     [HttpGet]
     [Authorize(Roles = "Admin")]
-    public ActionResult<IEnumerable<UserDto>> GetUsers([FromQuery] UserRole? role, [FromQuery] string? username)
+    public ActionResult<IEnumerable<UserDto>> GetUsers([FromQuery] string? username)
     {
         var result = _userService.GetAllUsers();
-        if (role.HasValue)
-        {
-            result = result.Where(u => u.Role == role.Value);
-        }
 
         if (!string.IsNullOrEmpty(username))
         {
             result = result.Where(u => u.Username.Contains(username, StringComparison.OrdinalIgnoreCase));
         }
-        return Ok(result.Select(u => u.MapToDto()));
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
@@ -49,15 +45,15 @@ public class UsersController : ControllerBase
             return Forbid();
         }
 
-        var user = _userService.GetAllUsers().FirstOrDefault(u => u.Id == id);
+        var user = _userService.GetById(id);
         if (user == null) return NotFound();
 
-        return Ok(user.MapToDto());
+        return Ok(user);
     }
 
     [HttpPut("{id}")]
     [Authorize]
-    public ActionResult<UserDto> UpdatedUser(int id, [FromBody] UserDto updatedUser)
+    public ActionResult<UserDto> UpdatedUser(int id, [FromBody] UpdateUserDto updatedUserDto)
     {
         var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
         var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
@@ -66,18 +62,15 @@ public class UsersController : ControllerBase
         {
             return Forbid();
         }
-        var user = _userService.GetAllUsers().FirstOrDefault(u => u.Id == id);
+
+        var user = _userService.GetById(id);
         if (user == null)
         {
             return NotFound();
         }
 
-        // Update the user properties with the new values
-        user.Username = updatedUser.Username ?? user.Username;
-        user.Email = updatedUser.Email ?? user.Email;
-        user.UpdatedAt = DateTime.UtcNow; // Update the UpdatedAt field
-
-        return Ok(user.MapToDto()); //204 Response
+        _mapper.Map(updatedUserDto, user);
+        return Ok(user);
     }
 
     [HttpDelete("{id}")]
