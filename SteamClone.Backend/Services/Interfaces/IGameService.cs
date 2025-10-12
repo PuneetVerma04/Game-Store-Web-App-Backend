@@ -1,5 +1,4 @@
 using SteamClone.Backend.DTOs;
-using SteamClone.Backend.Entities;
 
 namespace SteamClone.Backend.Services;
 
