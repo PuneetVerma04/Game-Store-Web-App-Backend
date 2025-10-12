@@ -1,20 +1,20 @@
 ﻿using SteamClone.Backend.Entities;
-namespace SteamClone.Backend.Services;
+using SteamClone.Backend.DTOs;
+using AutoMapper;
 
-public interface IOrderService
-{
-    Order CreateOrder(int userId, List<CartItem> cartItems);
-    Order? GetOrderById(int id);
-    IEnumerable<Order> GetOrdersForUser(int userId);
-    IEnumerable<Order> GetAllOrders();
-    bool UpdateOrderStatus(int orderId, Order updatedOrder);
-}
+namespace SteamClone.Backend.Services;
 
 public class OrderService : IOrderService
 {
     private readonly List<Order> _orders = new();
+    private readonly IMapper _mapper;
 
-    public Order CreateOrder(int userId, List<CartItem> cartItems) 
+    public OrderService(IMapper mapper)
+    {
+        _mapper = mapper;
+    }
+
+    public OrderResponseDto CreateOrder(int userId, List<CartItem> cartItems)
     {
         var order = new Order
         {
@@ -26,29 +26,31 @@ public class OrderService : IOrderService
             Status = OrderStatus.Completed
         };
         _orders.Add(order);
-        return order;
+        return _mapper.Map<OrderResponseDto>(order);
     }
 
-    public Order? GetOrderById(int orderId) 
+    public OrderResponseDto? GetOrderById(int orderId)
     {
-        return _orders.FirstOrDefault(o => o.OrderId == orderId);
-    }
-    
-    public IEnumerable<Order> GetOrdersForUser(int userId)
-    {
-        return _orders.Where(o => o.UserId == userId);
-    }
-    
-    public IEnumerable<Order> GetAllOrders() 
-    {
-        return _orders;
+        var order = _orders.FirstOrDefault(o => o.OrderId == orderId);
+        return order == null ? null : _mapper.Map<OrderResponseDto>(order);
     }
 
-    public bool UpdateOrderStatus(int orderId, Order updatedOrder) 
+    public IEnumerable<OrderResponseDto> GetOrdersForUser(int userId)
+    {
+        var orders = _orders.Where(o => o.UserId == userId);
+        return _mapper.Map<IEnumerable<OrderResponseDto>>(orders);
+    }
+
+    public IEnumerable<OrderResponseDto> GetAllOrders()
+    {
+        return _mapper.Map<IEnumerable<OrderResponseDto>>(_orders);
+    }
+
+    public bool UpdateOrderStatus(int orderId, OrderStatus newStatus)
     {
         var order = _orders.FirstOrDefault(o => o.OrderId == orderId);
         if (order == null) return false;
-        order.Status = updatedOrder.Status;
+        order.Status = newStatus;
         return true;
     }
 }

@@ -1,22 +1,17 @@
 using SteamClone.Backend.Entities;
+using SteamClone.Backend.DTOs;
+using AutoMapper;
 namespace SteamClone.Backend.Services;
 using BCrypt.Net;
 
-public interface IUserService
-{
-    User? GetByEmail(string email);
-    User? GetById(int id);
-    User? Create(User user, string password);
-    bool VerifyPassword(User user, string password);
-    IEnumerable<User> GetAllUsers();
-    bool Delete(int id);
-}
 public class UserService : IUserService
 {
     private readonly List<User> _users = new();
+    private readonly IMapper _mapper;
 
-    public UserService()
+    public UserService(IMapper mapper)
     {
+        _mapper = mapper;
         _users.AddRange(new[]
         {
             new User { Id = 1, Username = "john_doe", Email = "john@example.com", PasswordHash = BCrypt.HashPassword("password123"), Role = UserRole.Player, CreatedAt = DateTime.UtcNow },
@@ -27,9 +22,15 @@ public class UserService : IUserService
         });
     }
 
-    public User? GetByEmail(string email) => _users.FirstOrDefault(u => u.Email == email);
+    public User? GetByEmail(string email)
+    {
+        return _users.FirstOrDefault(u => u.Email == email);
+    }
 
-    public User? GetById(int id) => _users.FirstOrDefault(u => u.Id == id);
+    public User? GetById(int id)
+    {
+        return _users.FirstOrDefault(u => u.Id == id);
+    }
 
     public User Create(User user, string rawPassword)
     {
@@ -45,7 +46,11 @@ public class UserService : IUserService
         return BCrypt.Verify(password, user.PasswordHash);
     }
 
-    public IEnumerable<User> GetAllUsers() => _users;
+    public IEnumerable<User> GetAllUsers()
+    {
+        return _users;
+    }
+
     public bool Delete(int id)
     {
         var user = _users.FirstOrDefault(u => u.Id == id);

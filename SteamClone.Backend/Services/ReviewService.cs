@@ -1,39 +1,40 @@
 ﻿using SteamClone.Backend.Entities;
+using SteamClone.Backend.DTOs;
+using AutoMapper;
 
 namespace SteamClone.Backend.Services;
-
-public interface IReviewService
-{
-    IEnumerable<Reviews> GetReviewForGame(int gameId);
-    Reviews? GetReviewById(int reviewId);
-    Reviews AddReview(int gameId, int userId, Reviews newReview);
-    bool DeleteReview(int reviewId, int currentUserId, string currentUserRole);
-    Reviews? UpdateReview(int reviewId, int currentUserId, string? comment, int? rating);
-}
 
 public class ReviewService : IReviewService
 {
     private static readonly List<Reviews> reviews = new();
     private static int nextReviewId = 1;
+    private readonly IMapper _mapper;
 
-    public IEnumerable<Reviews> GetReviewForGame(int gameId)
+    public ReviewService(IMapper mapper)
     {
-
-        return reviews.Where(r => r.GameId == gameId);
+        _mapper = mapper;
     }
 
-    public Reviews? GetReviewById(int reviewId)
+    public IEnumerable<ReviewDto> GetReviewForGame(int gameId)
     {
-        return reviews.FirstOrDefault(r => r.ReviewId == reviewId);
+        var gameReviews = reviews.Where(r => r.GameId == gameId);
+        return _mapper.Map<IEnumerable<ReviewDto>>(gameReviews);
     }
 
-    public Reviews AddReview(int gameId, int userId, Reviews newReview)
+    public ReviewDto? GetReviewById(int reviewId)
     {
+        var review = reviews.FirstOrDefault(r => r.ReviewId == reviewId);
+        return review == null ? null : _mapper.Map<ReviewDto>(review);
+    }
+
+    public ReviewDto AddReview(int gameId, int userId, ReviewCreateDto newReviewDto)
+    {
+        var newReview = _mapper.Map<Reviews>(newReviewDto);
         newReview.ReviewId = nextReviewId++;
         newReview.GameId = gameId;
         newReview.UserId = userId;
         reviews.Add(newReview);
-        return newReview;
+        return _mapper.Map<ReviewDto>(newReview);
     }
 
     public bool DeleteReview(int reviewId, int currentUserId, string currentUserRole)
@@ -51,7 +52,7 @@ public class ReviewService : IReviewService
         return true;
     }
 
-    public Reviews? UpdateReview(int reviewId, int currentUserId, string? comment, int? rating)
+    public ReviewDto? UpdateReview(int reviewId, int currentUserId, string? comment, int? rating)
     {
         var review = reviews.FirstOrDefault(r => r.ReviewId == reviewId);
         if (review == null || review.UserId != currentUserId)
@@ -66,6 +67,6 @@ public class ReviewService : IReviewService
         {
             review.Rating = rating.Value;
         }
-        return review;
+        return _mapper.Map<ReviewDto>(review);
     }
 }

@@ -1,21 +1,17 @@
 ﻿using SteamClone.Backend.Entities;
-namespace SteamClone.Backend.Services;
+using SteamClone.Backend.DTOs;
+using AutoMapper;
 
-public interface IGameService
-{
-    IEnumerable<Game> GetAllGames();
-    Game? GetById(int id);
-    Game CreateGame(Game game);
-    Game? UpdateGame(int id, Game updatedGame);
-    bool DeleteGame(int id);
-}
+namespace SteamClone.Backend.Services;
 
 public class GameService : IGameService
 {
     private readonly List<Game> _games = new();
+    private readonly IMapper _mapper;
 
-    public GameService()
+    public GameService(IMapper mapper)
     {
+        _mapper = mapper;
         _games.AddRange(new[]
         {
             new Game { Id = 1, Title = "Elden Ring", Description = "An action RPG developed by FromSoftware.", Price = 59.99m, Genre = "RPG", Publisher = "Bandai Namco", ReleaseDate = new DateTime(2022, 2, 25), ImageUrl = "https://example.com/eldenring.jpg" },
@@ -30,47 +26,40 @@ public class GameService : IGameService
             new Game { Id = 10, Title = "Hollow Knight", Description = "Metroidvania-style action-adventure.", Price = 14.99m, Genre = "Metroidvania", Publisher = "Team Cherry", ReleaseDate = new DateTime(2017, 2, 24), ImageUrl = "https://example.com/hollowknight.jpg" }
         });
     }
-    public IEnumerable<Game> GetAllGames()
+
+    public IEnumerable<GameResponseDTO> GetAllGames()
     {
-        return _games;
+        return _mapper.Map<IEnumerable<GameResponseDTO>>(_games);
     }
 
-    public Game? GetById(int id)
+    public GameResponseDTO? GetById(int id)
     {
-        return _games.FirstOrDefault(game => game.Id == id);
+        var game = _games.FirstOrDefault(game => game.Id == id);
+        return game == null ? null : _mapper.Map<GameResponseDTO>(game);
     }
 
-    public Game CreateGame(Game game)
+    public GameResponseDTO CreateGame(CreateGameRequestDTO gameDto)
     {
+        var game = _mapper.Map<Game>(gameDto);
         game.Id = _games.Any() ? _games.Max(g => g.Id) + 1 : 1;
         _games.Add(game);
-        return game;
+        return _mapper.Map<GameResponseDTO>(game);
     }
 
-    public Game? UpdateGame(int id, Game updatedGame)
+    public GameResponseDTO? UpdateGame(int id, UpdateGameRequestDTO updatedGameDto)
     {
         var existingGame = _games.FirstOrDefault(g => g.Id == id);
         if (existingGame == null) return null;
 
-        if(!string.IsNullOrEmpty(updatedGame.Title))
-            existingGame.Title = updatedGame.Title;
-        if (!string.IsNullOrEmpty(updatedGame.Description))
-            existingGame.Description = updatedGame.Description;
-        if (updatedGame.Price >= 0)
-            existingGame.Price = updatedGame.Price;
-        if (!string.IsNullOrEmpty(updatedGame.Genre))
-            existingGame.Genre = updatedGame.Genre;
-        if (!string.IsNullOrEmpty(updatedGame.Publisher))
-            existingGame.Publisher = updatedGame.Publisher;
-        return existingGame;
+        _mapper.Map(updatedGameDto, existingGame);
+        return _mapper.Map<GameResponseDTO>(existingGame);
     }
 
     public bool DeleteGame(int id)
     {
-
         var gameToDelete = _games.FirstOrDefault(g => g.Id == id);
         if (gameToDelete == null) return false;
-        
+
         _games.Remove(gameToDelete);
         return true;
     }
