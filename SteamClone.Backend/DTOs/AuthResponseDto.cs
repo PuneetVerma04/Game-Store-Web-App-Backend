@@ -1,4 +1,4 @@
-namespace SteamClone.Backend.DTOs;
+namespace SteamClone.Backend.DTOs.Auth;
 
 public class AuthResponseDto
 {

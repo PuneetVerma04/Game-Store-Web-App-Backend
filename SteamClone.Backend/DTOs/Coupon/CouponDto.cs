@@ -1,4 +1,4 @@
-﻿namespace SteamClone.Backend.DTOs;
+namespace SteamClone.Backend.DTOs.Coupon;
 
 public class CouponDto
 {
