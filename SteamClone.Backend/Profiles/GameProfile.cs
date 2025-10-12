@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using SteamClone.Backend.Entities;
-using SteamClone.Backend.DTOs;
+using SteamClone.Backend.DTOs.Game;
 
 namespace SteamClone.Backend.Profiles;
 

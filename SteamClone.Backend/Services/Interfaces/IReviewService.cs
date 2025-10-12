@@ -1,4 +1,4 @@
-using SteamClone.Backend.DTOs;
+using SteamClone.Backend.DTOs.Review;
 
 namespace SteamClone.Backend.Services;
 

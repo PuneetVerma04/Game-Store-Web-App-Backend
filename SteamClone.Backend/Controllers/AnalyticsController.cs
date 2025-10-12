@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SteamClone.Backend.Entities;
 using SteamClone.Backend.Services;
 namespace SteamClone.Backend.Controllers;
 

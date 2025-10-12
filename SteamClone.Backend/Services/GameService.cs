@@ -1,5 +1,5 @@
 ﻿using SteamClone.Backend.Entities;
-using SteamClone.Backend.DTOs;
+using SteamClone.Backend.DTOs.Game;
 using AutoMapper;
 
 namespace SteamClone.Backend.Services;

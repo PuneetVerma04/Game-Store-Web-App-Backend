@@ -2,7 +2,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SteamClone.Backend.Entities;
-using SteamClone.Backend.DTOs;
+using SteamClone.Backend.DTOs.Coupon;
 
 namespace SteamClone.Backend.Controllers;
 

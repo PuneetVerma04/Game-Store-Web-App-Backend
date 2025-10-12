@@ -1,4 +1,4 @@
-using SteamClone.Backend.DTOs;
+using SteamClone.Backend.DTOs.Game;
 
 namespace SteamClone.Backend.Services;
 

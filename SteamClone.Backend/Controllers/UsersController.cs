@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SteamClone.Backend.DTOs;
+using SteamClone.Backend.DTOs.User;
 using SteamClone.Backend.Services;
 using AutoMapper;
 using System.Security.Claims;

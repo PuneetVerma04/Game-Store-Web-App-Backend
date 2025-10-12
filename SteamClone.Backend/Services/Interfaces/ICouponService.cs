@@ -1,4 +1,4 @@
-using SteamClone.Backend.DTOs;
+using SteamClone.Backend.DTOs.Coupon;
 
 namespace SteamClone.Backend.Services;
 

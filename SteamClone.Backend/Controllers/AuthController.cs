@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using SteamClone.Backend.DTOs;
+using SteamClone.Backend.DTOs.User;
+using SteamClone.Backend.DTOs.Auth;
 using SteamClone.Backend.Entities;
 using SteamClone.Backend.Services;
 using AutoMapper;

@@ -28,7 +28,7 @@ builder.Services.AddSingleton<IGameService, GameService>();
 builder.Services.AddSingleton<ICartService, CartService>();
 builder.Services.AddSingleton<IOrderService, OrderService>();
 builder.Services.AddSingleton<IReviewService, ReviewService>();
-builder.Services.AddSingleton<ICouponService, CouponService>(); // Register CouponService
+builder.Services.AddSingleton<ICouponService, CouponService>();
 builder.Services.AddSingleton<JwtService>();
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
