@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using SteamClone.Backend.Entities;
+using SteamClone.Backend.DTOs;
 
 namespace SteamClone.Backend.Profiles
 {
@@ -6,7 +8,8 @@ namespace SteamClone.Backend.Profiles
     {
         public OrderProfile()
         {
-            // Define mappings here
+            CreateMap<Order, OrderResponseDto>();
+            CreateMap<CartItem, OrderItemDto>();
         }
     }
 }

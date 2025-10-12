@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using SteamClone.Backend.Entities;
+using SteamClone.Backend.DTOs;
 
 namespace SteamClone.Backend.Profiles;
 
@@ -6,6 +8,8 @@ public class GameProfile : Profile
 {
     public GameProfile()
     {
-        // Define mappings here
+        CreateMap<Game, GameResponseDTO>();
+        CreateMap<CreateGameRequestDTO, Game>();
+        CreateMap<UpdateGameRequestDTO, Game>();
     }
 }
