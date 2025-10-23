@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using SteamClone.Backend.Services;
+using SteamClone.Backend.Services.Interfaces;
 using SteamClone.Backend.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -29,6 +30,7 @@ builder.Services.AddSingleton<ICartService, CartService>();
 builder.Services.AddSingleton<IOrderService, OrderService>();
 builder.Services.AddSingleton<IReviewService, ReviewService>();
 builder.Services.AddSingleton<ICouponService, CouponService>();
+builder.Services.AddSingleton<IAnalyticsService, AnalyticsService>();
 builder.Services.AddSingleton<JwtService>();
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
