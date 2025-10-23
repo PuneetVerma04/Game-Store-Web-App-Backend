@@ -1,71 +1,47 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SteamClone.Backend.Services;
-namespace SteamClone.Backend.Controllers;
+using SteamClone.Backend.Services.Interfaces;
+using SteamClone.Backend.DTOs.Analytics;
 
+namespace SteamClone.Backend.Controllers;
 
 [ApiController]
 [Route("store/[controller]")]
 [Authorize(Roles = "Admin")]
 public class AnalyticsController : ControllerBase
 {
-    private readonly IGameService _gameService; // added game service
-    private readonly IUserService _userService; // added user service
-    private readonly IOrderService _orderService; // added order service
-    
+    private readonly IAnalyticsService _analyticsService;
 
-    public AnalyticsController(IUserService userService, IGameService gameService, IOrderService orderService)
+    public AnalyticsController(IAnalyticsService analyticsService)
     {
-        _gameService = gameService; // initialize game service
-        _userService = userService; // initialize user service
-        _orderService = orderService; // initialize order service
+        _analyticsService = analyticsService;
     }
 
     [HttpGet]
     public IActionResult GetSummary()
-    {
-        var totalUsers = _userService.GetAllUsers().Count();
-        var totalGames = _gameService.GetAllGames().Count();
-        var totalOrders = _orderService.GetAllOrders().Count();
-
-        return Ok(new
-        {
-            TotalUsers = totalUsers,
-            TotalGames = totalGames,
-            TotalOrders = totalOrders
-        });
+  {
+        var summary = _analyticsService.GetSummary();
+ return Ok(summary);
     }
 
     [HttpGet("topGames")]
-    public IActionResult GetTopPurchasedGames()
+    public IActionResult GetTopPurchasedGames([FromQuery] int count = 5)
     {
-        var orders = _orderService.GetAllOrders();
-        var games = _gameService.GetAllGames().ToList();
-
-        var topGames = orders
-            .SelectMany(o => o.Items)
-            .GroupBy(i => i.GameId)
-            .Select(g => new
-            {
-                GameId = g.Key,
-                PurchaseCount = g.Count(),
-                GameTitle = games.FirstOrDefault(x => x.Id == g.Key)?.Title ?? "Unknown"
-            })
-            .OrderByDescending(g => g.PurchaseCount)
-            .Take(5)
-            .ToList();
-
+        var topGames = _analyticsService.GetTopPurchasedGames(count);
         return Ok(topGames);
     }
 
     [HttpGet("revenue")]
     public IActionResult GetRevenueLast30Days()
     {
-        var cutoffDate = DateTime.UtcNow.AddDays(-30);
-        var revenue = _orderService.GetAllOrders()
-            .Where(o => o.OrderDate >= cutoffDate)
-            .Sum(o => o.TotalPrice);
-
+        var revenue = _analyticsService.GetRevenueLast30Days();
         return Ok(new { Last30DaysRevenue = revenue });
+    }
+
+ [HttpGet("revenue/daily")]
+    public IActionResult GetDailyRevenueStats([FromQuery] int days = 30)
+    {
+        var dailyStats = _analyticsService.GetDailyRevenueStats(days);
+        return Ok(dailyStats);
     }
 }
