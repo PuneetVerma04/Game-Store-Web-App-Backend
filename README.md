@@ -1,4 +1,4 @@
-# Steam Clone Backend
+# Gray Zone Backend
 
 A comprehensive ASP.NET Core Web API backend for a Steam-like game store application. This project provides a full-featured, production-ready API for managing games, users, shopping carts, orders, reviews, coupons, and analytics with extensive test coverage.
 
