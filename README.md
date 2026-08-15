@@ -1,4 +1,4 @@
-# Gray Zone Backend
+# Aphelion Backend
 
 A comprehensive ASP.NET Core Web API backend for a Steam-like game store application. This project provides a full-featured, production-ready API for managing games, users, shopping carts, orders, reviews, coupons, and analytics with extensive test coverage.
 
@@ -37,7 +37,7 @@ A comprehensive ASP.NET Core Web API backend for a Steam-like game store applica
 ## 📁 Project Structure
 
 ```
-SteamClone.Backend/
+AphelionBackend/
 ├── Controllers/          # API controllers
 │   ├── AuthController.cs
 │   ├── GamesController.cs
@@ -105,8 +105,8 @@ SteamClone.Backend/
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/PuneetVerma04/Game-Store-Web-App-Backend.git
-   cd "Steam Clone Back"
+   git clone https://github.com/PuneetVerma04/Aphelion-Backend.git
+   cd Aphelion-Backend
    ```
 
 2. **Restore packages**
@@ -143,13 +143,13 @@ SteamClone.Backend/
 5. **Apply database migrations**
 
    ```bash
-   dotnet ef database update --project SteamClone.Backend
+   dotnet ef database update --project AphelionBackend
    ```
 
 6. **Run the application**
 
    ```bash
-   dotnet run --project SteamClone.Backend
+   dotnet run --project AphelionBackend
    ```
 
 7. **Access API documentation**
@@ -158,61 +158,70 @@ SteamClone.Backend/
 
 ## 📚 API Endpoints
 
-### Authentication
+> Full request/response DTO shapes are documented in [`Docs/API.md`](Docs/API.md).
 
-- `POST /store/auth/register` - User registration
-- `POST /store/auth/login` - User login (returns JWT token)
+### Authentication (`/store/auth`)
 
-### Games
+- `POST /store/auth/register` - User registration (defaults to `Player` role, returns a JWT token)
+- `POST /store/auth/login` - User login (returns JWT token, username, and role)
 
-- `GET /store/games` - Get all games (supports pagination and filtering)
-  - Query params: `pageNumber`, `pageSize`, `genre`, `minPrice`, `maxPrice`
-- `GET /store/games/{id}` - Get game by ID
+### Games (`/store/games`)
+
+- `GET /store/games` - Get all games with pagination, filtering, and sorting (Anonymous)
+  - Query params: `pageNumber`, `pageSize`, `genre`, `minPrice`, `maxPrice`, `searchTerm`, `publisherId`, `releaseDateFrom`, `releaseDateTo`, `sortBy`, `sortOrder`
+- `GET /store/games/all` - Legacy, unpaginated listing (Anonymous, deprecated — query params: `genre`, `maxPrice`)
+- `GET /store/games/{id}` - Get game by ID (Anonymous)
 - `POST /store/games` - Create new game (Publisher/Admin only)
-- `PUT /store/games/{id}` - Update game (Publisher/Admin only)
+- `PATCH /store/games/{id}` - Partially update a game (Publisher/Admin only; publishers may only edit their own games)
 - `DELETE /store/games/{id}` - Delete game (Admin only)
 
-### Users
+### Users (`/store/users`)
 
-- `GET /store/users` - Get all users (Admin only)
-- `GET /store/users/{id}` - Get user by ID
-- `PUT /store/users/{id}` - Update user profile
+- `GET /store/users` - Get all users, optional `?username=` filter (Admin only)
+- `GET /store/users/{id}` - Get user by ID (self or Admin only)
+- `PUT /store/users/{id}` - Update user profile (self or Admin only)
 - `DELETE /store/users/{id}` - Delete user (Admin only)
 
-### Cart
+### Cart (`/store/cart`)
 
-- `GET /store/cart/{userId}` - Get user's cart with total price
-- `POST /store/cart` - Add item to cart
-- `DELETE /store/cart/{userId}/{gameId}` - Remove item from cart
-- `DELETE /store/cart/{userId}` - Clear entire cart
+All cart routes act on the authenticated user (from the JWT) and require the `Player` role — there is no `{userId}` in the URL.
 
-### Orders
+- `GET /store/cart` - Get the current user's cart items
+- `POST /store/cart/add` - Add a game to the cart (or increase quantity if already present)
+- `PATCH /store/cart/update` - Update an item's quantity (removes the item if quantity ≤ 0)
 
-- `GET /store/orders` - Get user's order history
-- `GET /store/orders/{id}` - Get order details with items
-- `POST /store/orders` - Create new order from cart
+There is currently no endpoint to remove a single item or clear the whole cart directly — the cart is only cleared automatically as part of checkout.
 
-### Reviews
+### Orders (`/store/orders`)
 
-- `GET /store/reviews/game/{gameId}` - Get all reviews for a game
-- `GET /store/reviews/{id}` - Get specific review
-- `POST /store/reviews` - Create review (requires purchase)
-- `PUT /store/reviews/{id}` - Update review (own reviews only)
-- `DELETE /store/reviews/{id}` - Delete review (own reviews or Admin)
+- `GET /store/orders` - Get the current user's orders, or all orders if Admin
+- `POST /store/orders/checkout` - Create a new order from the current cart contents and clear the cart
+- `GET /store/orders/{id}` - Get order details with items (owner or Admin only)
+- `PATCH /store/orders/{id}/status` - Update an order's status (Admin only)
 
-### Coupons
+### Reviews (`/store/reviews`)
 
-- `GET /store/coupons` - Get all available coupons
-- `GET /store/coupons/{code}` - Get coupon by code
+- `GET /store/reviews/game/{gameId}` - Get all reviews for a game (Anonymous)
+- `GET /store/reviews/{id}` - Get a specific review
+- `POST /store/reviews/game/{gameId}/add` - Create a review for a game (Player only)
+- `PATCH /store/reviews/{id}/update` - Update a review (own reviews only, Player)
+- `DELETE /store/reviews/{id}` - Delete a review (own reviews or Admin)
+
+### Coupons (`/store/coupons`)
+
+- `GET /store/coupons` - Get all coupons, active and inactive (Player/Admin)
+- `GET /store/coupons/{id}` - Get coupon by numeric ID (Admin only)
 - `POST /store/coupons` - Create coupon (Admin only)
-- `POST /store/coupons/validate` - Validate coupon code
-- `DELETE /store/coupons/{id}` - Delete coupon (Admin only)
+- `PATCH /store/coupons/{id}/deactivate` - Deactivate a coupon (Admin only)
 
-### Analytics
+There is currently no lookup-by-code, validate, or hard-delete endpoint — deactivation is the only way to retire a coupon.
 
-- `GET /store/analytics/summary` - Get comprehensive analytics summary (Admin only)
-- `GET /store/analytics/revenue` - Get revenue statistics
-- `GET /store/analytics/games/top` - Get top performing games
+### Analytics (`/store/analytics`, Admin only)
+
+- `GET /store/analytics` - Get comprehensive analytics summary
+- `GET /store/analytics/topGames` - Get top performing games, optional `?count=` (default 5)
+- `GET /store/analytics/revenue` - Get total revenue for the last 30 days
+- `GET /store/analytics/revenue/daily` - Get daily revenue breakdown, optional `?days=` (default 30)
 
 ## 👥 User Roles
 
