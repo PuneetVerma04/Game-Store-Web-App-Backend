@@ -1,6 +1,6 @@
 # Aphelion Backend
 
-A comprehensive ASP.NET Core Web API backend for a Steam-like game store application. This project provides a full-featured, production-ready API for managing games, users, shopping carts, orders, reviews, coupons, and analytics with extensive test coverage.
+A comprehensive ASP.NET Core Web API backend for a Steam-like game store application. This project provides a full-featured API for managing games, users, shopping carts, orders, reviews, coupons, and analytics with extensive test coverage.
 
 ## 🚀 Features
 
@@ -11,7 +11,7 @@ A comprehensive ASP.NET Core Web API backend for a Steam-like game store applica
 - **Shopping Cart**: Add, remove, and manage game purchases with real-time price calculation
 - **Order Processing**: Complete order management system with order history and tracking
 - **Review System**: User reviews and ratings for games with validation
-- **Coupon System**: Discount codes and promotional offers with expiration tracking
+- **Coupon System**: Discount codes and promotional offers
 - **Analytics Dashboard**: Revenue tracking, game performance metrics, and sales analytics
 
 ### Security & Authentication
@@ -158,8 +158,6 @@ AphelionBackend/
 
 ## 📚 API Endpoints
 
-> Full request/response DTO shapes are documented in [`Docs/API.md`](Docs/API.md).
-
 ### Authentication (`/store/auth`)
 
 - `POST /store/auth/register` - User registration (defaults to `Player` role, returns a JWT token)
@@ -188,7 +186,7 @@ All cart routes act on the authenticated user (from the JWT) and require the `Pl
 
 - `GET /store/cart` - Get the current user's cart items
 - `POST /store/cart/add` - Add a game to the cart (or increase quantity if already present)
-- `PATCH /store/cart/update` - Update an item's quantity (removes the item if quantity ≤ 0)
+- `PATCH /store/cart/update` - Update an item's quantity
 
 There is currently no endpoint to remove a single item or clear the whole cart directly — the cart is only cleared automatically as part of checkout.
 
