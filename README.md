@@ -1,6 +1,6 @@
 # Aphelion Backend
 
-A comprehensive ASP.NET Core Web API backend for a Steam-like game store application. This project provides a full-featured API for managing games, users, shopping carts, orders, reviews, coupons, and analytics with extensive test coverage.
+A comprehensive ASP.NET Core Web API backend for a Steam-like game store application. This project provides a full-featured API for managing games, users, shopping carts, orders, reviews, coupons, and analytics.
 
 ## 🚀 Features
 
@@ -8,7 +8,7 @@ A comprehensive ASP.NET Core Web API backend for a Steam-like game store applica
 
 - **User Management**: Registration, authentication, and role-based authorization (Player, Publisher, Admin)
 - **Game Catalog**: Complete CRUD operations for game management with pagination, filtering by genre and price
-- **Shopping Cart**: Add, remove, and manage game purchases with real-time price calculation
+- **Shopping Cart**: Add and manage game purchases with real-time price calculation
 - **Order Processing**: Complete order management system with order history and tracking
 - **Review System**: User reviews and ratings for games with validation
 - **Coupon System**: Discount codes and promotional offers
