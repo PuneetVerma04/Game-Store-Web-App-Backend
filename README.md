@@ -1,5 +1,7 @@
 # Aphelion Backend
 
+Frontend: [Aphelion-Frontend](https://github.com/PuneetVerma04/Aphelion-Frontend)
+
 A comprehensive ASP.NET Core Web API backend for a Steam-like game store application. This project provides a full-featured API for managing games, users, shopping carts, orders, reviews, coupons, and analytics.
 
 ## 🚀 Features
@@ -121,7 +123,7 @@ AphelionBackend/
    ```json
    {
      "ConnectionStrings": {
-       "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=SteamCloneDB;Trusted_Connection=true;"
+       "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=AphelionDB;Trusted_Connection=true;"
      }
    }
    ```
@@ -133,8 +135,8 @@ AphelionBackend/
    {
      "JwtSettings": {
        "Key": "your-secret-key-minimum-32-characters",
-       "Issuer": "SteamCloneAPI",
-       "Audience": "SteamCloneClient",
+       "Issuer": "AphelionAPI",
+       "Audience": "AphelionClient",
        "ExpirationInMinutes": 60
      }
    }
